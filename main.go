@@ -70,7 +70,7 @@ func PKCS5UnPadding(origData []byte) []byte {
 
 func main() {
 	cipher := CipherRequest{"12345678"}
-	encrypted, err := cipher.Encrypt("buladig")
+	encrypted, err := cipher.Encrypt("bukanana")
 	if err != nil {
 		panic(err)
 	}
