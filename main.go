@@ -1,83 +1,54 @@
 package main
 
 import (
-	"bytes"
-	"crypto/cipher"
-	"crypto/des"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
+
+	Service "github.com/fanadewi/go-cipher/services"
 )
 
-type CipherRequest struct {
-	Key string
-}
-
-func (cipher *CipherRequest) Encrypt(data string) (encrypted string, err error) {
-	triplekey := cipher.Key + cipher.Key + cipher.Key
-	// encrypt
-	encryptedByte, err := TripleDesEncrypt([]byte(data), []byte(triplekey))
-	encrypted = string(encryptedByte[:])
-	return
-}
-
-func (cipher *CipherRequest) Decrypt(data string) (decrypted string, err error) {
-	triplekey := cipher.Key + cipher.Key + cipher.Key
-	// encrypt
-	decryptedByte, err := TripleDesDecrypt([]byte(data), []byte(triplekey))
-	decrypted = string(decryptedByte[:])
-	return
-}
-
-func TripleDesEncrypt(data, key []byte) ([]byte, error) {
-	block, err := des.NewTripleDESCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	ciphertext := key
-	iv := ciphertext[:des.BlockSize]
-	origData := PKCS5Padding(data, block.BlockSize())
-	mode := cipher.NewCBCEncrypter(block, iv)
-	encrypted := make([]byte, len(origData))
-	mode.CryptBlocks(encrypted, origData)
-	return encrypted, nil
-}
-
-func TripleDesDecrypt(data, key []byte) ([]byte, error) {
-	block, err := des.NewTripleDESCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	ciphertext := key
-	iv := ciphertext[:des.BlockSize]
-
-	decrypter := cipher.NewCBCDecrypter(block, iv)
-	decrypted := make([]byte, len(data))
-	decrypter.CryptBlocks(decrypted, data)
-	decrypted = PKCS5UnPadding(decrypted)
-	return decrypted, nil
-}
-
-func PKCS5Padding(ciphertext []byte, blockSize int) []byte {
-	padding := blockSize - len(ciphertext)%blockSize
-	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
-	return append(ciphertext, padtext...)
-}
-
-func PKCS5UnPadding(origData []byte) []byte {
-	length := len(origData)
-	unpadding := int(origData[length-1])
-	return origData[:(length - unpadding)]
-}
-
 func main() {
-	cipher := CipherRequest{"12345678"}
-	encrypted, err := cipher.Encrypt("bukanana")
+	aes256()
+	tripleDes()
+}
+
+func tripleDes() {
+	fmt.Println("TripleDes")
+	tripleDesCipher := Service.TripleDesCipher{Key: generateKey(4)}
+	encrypted, err := tripleDesCipher.Encrypt("tripleDesAna")
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(encrypted)
-	decrypted, err := cipher.Decrypt(encrypted)
+	decrypted, err := tripleDesCipher.Decrypt(encrypted)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(decrypted)
+}
+
+func aes256() {
+	fmt.Println("AES")
+	aes256Cipher := Service.Aes256Cipher{Key: generateKey(32)}
+	encrypted, err := aes256Cipher.Encrypt("AesExampleAna")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(encrypted)
+
+	decrypted, err := aes256Cipher.Decrypt(encrypted)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(decrypted)
+}
+
+func generateKey(byteSize int) string {
+	bytes := make([]byte, byteSize)
+	if _, err := rand.Read(bytes); err != nil {
+		panic(err.Error())
+	}
+	key := hex.EncodeToString(bytes) //encode key in bytes to string and keep as secret, put in a vault
+	return key
 }
